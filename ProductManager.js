@@ -1,71 +1,113 @@
+const fs = require('fs');
+
 class ProductManager {
-    #id =0;
+    #id = 0;
     
     constructor(){          //funcion constructora donde se almacenaran los productos
-        this.products = [];
+        fs.promises.writeFile('./products.json', JSON.stringify([]))      
     }
 
     
-    getProducts() {                //funcion para mostrar array de productos
-        return this.products;
-    }
-    
-    addProduct(title, description, price, thumbnail, code, stock) {  //funcion para agregar productos al array con parametros
+   
+    async getProducts() {  
+        try{
+            const productosActuales = await fs.promises.readFile('./products.json', 'utf-8')
+            return JSON.parse(productosActuales);       
+        }
+        catch(err){
+            console.log('No hay productos para mostrar')
+        }              //funcion para mostrar array de productos
         
-        if (!title || !description || !price || !thumbnail || !code || !stock){     //condicion para parametros obligatorios
-            console.log("Todos los campos son obligatorios");
-            return;
-        }
-
-        for (let i = 0 ; i < this.products.length; i++){        //condicion para que el parametro code no se repita
-            if(this.products[i].code === code){
-                console.log("el codigo ya existe, porfavor ingrese otro");
-                return;
-            }
-        }
-    
-        const product = {                      //creacion del producto mediante parametros
-            title, 
-            description, 
-            price, 
-            thumbnail, 
-            code, 
-            stock
-        }       
-        product.id = this.#getID();    //se agrega el id como variable de cada producto
-
-
-        this.products.push(product);
-     
-    }
-
-    #getID(){ 
-                            //creacion de ID autoincremental
-        this.#id ++;
-        return this.#id;
-    }
-
-    getProductById(id){                 //funcion para obtener el producto mediante el id por parametro
-        for (let i = 0 ; i < this.products.length; i++){
-            if (this.products[i].id === id){
-                return this.products[i]
-            } else {
-                console.log("No tenemos productos con ese id");
-                return;
-            }
-        }
     }
     
+    async addProduct(product) {  //funcion para agregar productos al array con parametros
+        
+        try{
+            const productosActuales = await this.getProducts()
+            const newProduct = { ...product, id: this.#id++ }
+            productosActuales.push(newProduct)
+            await fs.promises.writeFile('./products.json', JSON.stringify(productosActuales))
+           
+        } 
+        catch(err){
+            console.log('No se pudo agregar el producto')
+        }
 
-}
+    }
+
+    
+  
+
+    async getProductById(id){                 //funcion para obtener el producto mediante el id por parametro
+        
+        const productosActuales = await this.getProducts();
+        for (let i = 0 ; i < productosActuales.length; i++){
+            if (productosActuales[i].id === id){
+                return productosActuales[i]
+            }    
+        }
+        console.log("No tenemos productos con ese id");
+        return null;
+       
+    }
+
+    async updateProduct(id, camposParaReemplazar) {
+        const productosActuales = await this.getProducts();
+        const productIndex = productosActuales.findIndex((product) => product.id === id);
+      
+        if (productIndex <= -1) {
+          console.log("No se encontró el producto con ese id");
+          return null;
+        }
+      
+        productosActuales[productIndex] = {
+          ...productosActuales[productIndex],
+          ...camposParaReemplazar,
+        };
+      
+        await fs.promises.writeFile(
+          "./products.json",
+          JSON.stringify(productosActuales)
+        );
+      
+        return productosActuales[productIndex];
+    }
+
+    async deleteProduct(id) {
+        const productosActuales = await this.getProducts();
+        const nuevoArrayProductos = productosActuales.filter(producto => producto.id !== id);
+        await fs.promises.writeFile('./products.json', JSON.stringify(nuevoArrayProductos));
+        console.log("Producto eliminado correctamente");
+        return nuevoArrayProductos;
+    }
+ 
+
+};
 
 
 
 //PRUEBAS
-const pm = new ProductManager();
-pm.addProduct("asd", "qwerty", 100, "qwedsfg", 123, 10)
-pm.addProduct("asdasd", "asdasdqwerty", 100, "qwedsfg", 321, 10)
-//console.log(pm.getProducts())
-console.log(pm.getProductById(3))
+const products = new ProductManager();
+
+
+
+const prueba = async () => {
+    try{
+       await products.addProduct({title: 'cubiertas', description:'redonda', price: 20000, thumbnail:'asd', code:1234, stock: 10 });
+       await products.addProduct({title: 'llanta', description:'metalica', price: 28000, thumbnail:'asdasd', code:12345, stock: 11 });
+       await products.addProduct({title: 'gomita', description:'cuadrado', price: 228000, thumbnail:'qwerty', code:123456, stock: 13 });
+       console.log(await products.getProducts());
+       console.log(await products.getProductById(1));
+       console.log(await products.updateProduct(1, { title: "Cubiertas Nuevas", price: 25000 }));
+       console.log(await products.updateProduct(2, { title: "gomon", code: 5000 }));
+       console.log(await products.deleteProduct(0))
+    }
+    catch (err){
+        console.log('La prueba salio mal')
+    }
+};
+
+prueba();
+
 
 
