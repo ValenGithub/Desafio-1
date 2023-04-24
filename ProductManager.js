@@ -1,17 +1,21 @@
 const fs = require('fs');
 
 class ProductManager {
-    #id = 0;
+   
     
-    constructor(){          //funcion constructora donde se almacenaran los productos
-        fs.promises.writeFile('./products.json', JSON.stringify([]))      
+    constructor(path){          //funcion constructora donde se almacenaran los productos
+        this.id = 0;
+        this.path = './products.json'
+        if(!fs.existsSync(this.path)){
+            fs.promises.writeFile(this.path, JSON.stringify([]))
+        }              
     }
 
     
    
     async getProducts() {  
         try{
-            const productosActuales = await fs.promises.readFile('./products.json', 'utf-8')
+            const productosActuales = await fs.promises.readFile(this.path, 'utf-8')
             return JSON.parse(productosActuales);       
         }
         catch(err){
@@ -24,9 +28,9 @@ class ProductManager {
         
         try{
             const productosActuales = await this.getProducts()
-            const newProduct = { ...product, id: this.#id++ }
+            const newProduct = { ...product, id: this.id++ }
             productosActuales.push(newProduct)
-            await fs.promises.writeFile('./products.json', JSON.stringify(productosActuales))
+            await fs.promises.writeFile(this.path, JSON.stringify(productosActuales))
            
         } 
         catch(err){
@@ -66,7 +70,7 @@ class ProductManager {
         };
       
         await fs.promises.writeFile(
-          "./products.json",
+            this.path,
           JSON.stringify(productosActuales)
         );
       
@@ -76,7 +80,7 @@ class ProductManager {
     async deleteProduct(id) {
         const productosActuales = await this.getProducts();
         const nuevoArrayProductos = productosActuales.filter(producto => producto.id !== id);
-        await fs.promises.writeFile('./products.json', JSON.stringify(nuevoArrayProductos));
+        await fs.promises.writeFile(this.path, JSON.stringify(nuevoArrayProductos));
         console.log("Producto eliminado correctamente");
         return nuevoArrayProductos;
     }
@@ -87,7 +91,7 @@ class ProductManager {
 
 
 //PRUEBAS
-const products = new ProductManager();
+const products = new ProductManager(this.path);
 
 
 
